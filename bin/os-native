@@ -2,6 +2,7 @@
 """
 os-native: Unified Cross-Platform Zero-Token OS Superpower Runner
 Auto-detects macOS (Darwin), Linux, or Windows and delegates to the native engine.
+Author: Tan Le Duy <ldtan96@gmail.com> (https://tahi.vn)
 """
 
 import sys
@@ -34,18 +35,43 @@ def handle_ocr(args):
     elif SYSTEM == "Windows":
         script_path = os.path.join(PROJECT_ROOT, "windows", "win-ocr.ps1")
         return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-ImagePath", image_path])
-    else:
-        print(f"Unsupported OS: {SYSTEM}")
+    return 1
+
+def handle_search(args):
+    if not args:
+        print("Usage: os-native search <query> [path_scope]")
         return 1
+    query = args[0]
+    scope = args[1] if len(args) > 1 else ""
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-search")
+        cmd = [bin_path, query]
+        if scope:
+            cmd.append(scope)
+        return run_cmd(cmd)
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-search.sh")
+        cmd = [script_path, query]
+        if scope:
+            cmd.append(scope)
+        return run_cmd(cmd)
+    elif SYSTEM == "Windows":
+        script_path = os.path.join(PROJECT_ROOT, "windows", "win-search.ps1")
+        return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-Query", query, "-PathScope", scope])
+    return 1
 
 def handle_docx(args):
     if not args:
-        print("Usage: os-native docx <file.docx>")
+        print("Usage: os-native docx <file.docx> [output.txt]")
         return 1
     docx_path = args[0]
+    out_path = args[1] if len(args) > 1 else ""
     if SYSTEM == "Darwin":
         bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-docx")
-        return run_cmd([bin_path, docx_path])
+        cmd = [bin_path, docx_path]
+        if out_path:
+            cmd.append(out_path)
+        return run_cmd(cmd)
     elif SYSTEM == "Linux":
         script_path = os.path.join(PROJECT_ROOT, "linux", "linux-docx.sh")
         return run_cmd([script_path, docx_path])
@@ -54,8 +80,28 @@ def handle_docx(args):
         return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-DocxPath", docx_path])
     return 1
 
+def handle_pdf(args):
+    if not args:
+        print("Usage: os-native pdf extract <file.pdf> | render <file.pdf> <out_dir>")
+        return 1
+    sub = args[0]
+    pdf_path = args[1] if len(args) > 1 else ""
+    if SYSTEM == "Darwin":
+        if sub == "extract":
+            bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-pdf-extract")
+            return run_cmd([bin_path, pdf_path] + args[2:])
+        else:
+            bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-pdf-render")
+            return run_cmd([bin_path, pdf_path] + args[2:])
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-pdf.sh")
+        return run_cmd([script_path, sub, pdf_path] + args[2:])
+    else:
+        print(f"PDF handling on {SYSTEM} requires local reader or poppler.")
+        return 1
+
 def handle_notify(args):
-    title = args[0] if len(args) > 0 else "Hermes Agent"
+    title = args[0] if len(args) > 0 else "os-native"
     msg = args[1] if len(args) > 1 else "Task completed"
     if SYSTEM == "Darwin":
         bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-notify")
@@ -94,32 +140,70 @@ def handle_clipboard(args):
         return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-Mode", mode, "-Content", content])
     return 1
 
+def handle_audio_convert(args):
+    if len(args) < 2:
+        print("Usage: os-native audio-convert <input_audio> <output_audio>")
+        return 1
+    in_file, out_file = args[0], args[1]
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-audio-convert")
+        return run_cmd([bin_path, in_file, out_file])
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-audio-convert.sh")
+        return run_cmd([script_path, in_file, out_file])
+    return 1
+
+def handle_tts(args):
+    if not args:
+        print("Usage: os-native tts <text> [output_file]")
+        return 1
+    text = args[0]
+    out_file = args[1] if len(args) > 1 else ""
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-tts")
+        return run_cmd([bin_path, text, out_file or "speech.m4a"])
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-tts.sh")
+        return run_cmd([script_path, text, out_file])
+    elif SYSTEM == "Windows":
+        script_path = os.path.join(PROJECT_ROOT, "windows", "win-tts.ps1")
+        return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-Text", text, "-OutputFile", out_file])
+    return 1
+
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
         print("os-native: Zero-Token Cross-Platform Superpower CLI")
         print(f"Detected Platform: {SYSTEM}")
-        print("\nCommands:")
-        print("  ocr <image_path>                  Extract text from image (Native WinRT / Vision / Tesseract)")
-        print("  docx <file.docx>                  Read word document as plain text")
-        print("  notify <title> <message>          Send system desktop notification")
+        print("\nUniversal Commands:")
+        print("  ocr <image_path>                  Extract text from image (WinRT / Vision / Tesseract)")
+        print("  search <query> [path]             Sub-second indexed file search (Spotlight / OLEDB / Plocate)")
+        print("  docx <file.docx> [out.txt]        Read Word document as plain text")
+        print("  pdf extract|render <file.pdf> ... PDF text parsing or page rendering")
+        print("  notify <title> <message>          Send native desktop notification")
         print("  clipboard --copy <text> / --paste Sync clipboard across device")
         print("  telemetry                         Display host resource status (RAM, CPU, Uptime)")
+        print("  audio-convert <in> <out>          Sub-millisecond audio format conversion")
+        print("  tts <text> [output]               Offline text-to-speech synthesis")
         print("  macos <tool> ...                  Directly call macOS native tool (Darwin only)")
         return 0
 
     subcmd = sys.argv[1]
     args = sys.argv[2:]
 
-    if subcmd == "ocr":
-        return handle_ocr(args)
-    elif subcmd == "docx":
-        return handle_docx(args)
-    elif subcmd == "notify":
-        return handle_notify(args)
-    elif subcmd == "telemetry":
-        return handle_telemetry(args)
-    elif subcmd == "clipboard":
-        return handle_clipboard(args)
+    handlers = {
+        "ocr": handle_ocr,
+        "search": handle_search,
+        "docx": handle_docx,
+        "pdf": handle_pdf,
+        "notify": handle_notify,
+        "telemetry": handle_telemetry,
+        "clipboard": handle_clipboard,
+        "audio-convert": handle_audio_convert,
+        "tts": handle_tts
+    }
+
+    if subcmd in handlers:
+        return handlers[subcmd](args)
     elif subcmd == "macos" and SYSTEM == "Darwin":
         tool = args[0] if args else ""
         bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", tool)

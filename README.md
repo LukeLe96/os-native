@@ -84,17 +84,27 @@ The `os-native` runner auto-detects `Darwin`, `Linux`, or `Windows` and routes y
 # 1. OCR text extraction from any image
 os-native ocr path/to/screenshot.png
 
-# 2. Extract plain text from Word document (.docx)
+# 2. Sub-second indexed file search (Spotlight / OLEDB / Plocate)
+os-native search "quarterly_report" /path/to/search/scope
+
+# 3. Extract plain text from Word document (.docx)
 os-native docx path/to/contract.docx
 
-# 3. Post a native desktop notification
+# 4. Extract PDF text or render pages to high-res images
+os-native pdf extract document.pdf
+os-native pdf render document.pdf ./pdf_output_dir
+
+# 5. Convert audio formats in sub-milliseconds without FFmpeg bloat
+os-native audio-convert input.wav output.m4a
+
+# 6. Post a native desktop notification
 os-native notify "Pipeline Status" "Model training completed successfully"
 
-# 4. Synchronize with system clipboard
+# 7. Synchronize with system clipboard across devices
 os-native clipboard --copy "Extracted API key or prompt"
 os-native clipboard --paste
 
-# 5. Check real-time hardware resource telemetry
+# 8. Check real-time hardware resource telemetry
 os-native telemetry
 ```
 
@@ -161,7 +171,8 @@ Before transmitting any host environment telemetry (OS distribution, kernel vers
 
 This project is licensed under the **[MIT License](LICENSE)**.
 
-* **Author & Creator:** Tan Le Duy (Tân Lê Duy)
+* **Author & Creator:** Tan Le Duy (Tân Lê Duy) <ldtan96@gmail.com>
 * **Official Website & Portal:** [tahi.vn](https://tahi.vn)
+* **Direct Contact:** [ldtan96@gmail.com](mailto:ldtan96@gmail.com)
 * **Commercial Use:** Permitted free of charge for startups, enterprises, and open-source projects.
 * **Attribution Requirement:** Any redistribution, modification, or inclusion of this software or its derivatives in commercial products must retain the original copyright notice and acknowledge the author with reference to [tahi.vn](https://tahi.vn).

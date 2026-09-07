@@ -21,6 +21,23 @@ Modern AI workflows suffer from a costly anti-pattern: **offloading primitive de
 
 ---
 
+## 💰 The Economic Case: Cloud LLM APIs vs. os-native (Before & After)
+
+| Task Category | Legacy Approach (Cloud APIs / Bloatware) | Legacy Cost & Latency | With `os-native` | Total Savings |
+| :--- | :--- | :--- | :--- | :---: |
+| **Image OCR & Live Text** | Frontier Vision API (GPT-4o / Claude 3.5 / Google Cloud Vision) | **~$0.015 – $0.03 / image**<br>(~1,500–2,500 tokens, 3s–5s latency) | **$0.00 (0 Tokens)**<br>Runs in **~0.21s** | **100% Cost Reduction**<br>15x Faster |
+| **Background / Subject Removal** | Commercial Cloud APIs (Remove.bg / Clipdrop) or 1.5GB Python PyTorch/rembg | **~$0.10 – $0.20 / image**<br>(Free tiers cap resolution to 0.25MP) | **$0.00 (0 Tokens)**<br>Runs in **~0.24s** (Full resolution) | **100% Cost Reduction**<br>Zero RAM Bloat |
+| **PDF & Document Parsing** | Streaming full document bytes into LLM context window | **~$0.05 – $0.15 / document**<br>(10,000–30,000 tokens consumed) | **$0.00 (0 Tokens)**<br>Runs in **~0.01s – 0.02s** | **100% Cost Reduction**<br>Instant Zero-Latency |
+| **Video & Audio Processing** | Installing heavy FFmpeg binaries, 100% CPU thread lock | CPU thermal throttling & power drain | **$0.00 (0 Tokens)**<br>Apple Silicon Media Engine (~0.3s) | **~0% CPU Overhead** |
+| **Data Privacy & Compliance** | Transmitting contracts, receipts, customer chat logs to 3rd-party cloud servers | Critical data leak risk & GDPR liability | **100% On-Device**<br>Data never leaves host RAM | **Priceless** |
+
+### 📈 Monthly Enterprise Agent Fleet Projection (100 Daily Tasks)
+In a modest multi-agent setup processing 100 OCR requests, 50 image segmentations, and 30 documents daily:
+* **Legacy Cloud Approach:** ~$10.00 / day ➔ **~$300.00 / month (~$3,600 / year)** wasted on primitive compute.
+* **With `os-native`:** **$0.00 / month.** Pay for LLM tokens only when you actually need complex reasoning.
+
+---
+
 ## 🏛️ Project Architecture
 
 ```

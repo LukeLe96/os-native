@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: apple-audio-convert <input_audio> <output_audio>"
+  echo "Supported output formats: .wav, .m4a, .aac, .aiff"
+  exit 1
+fi
+INPUT="$1"
+OUTPUT="$2"
+EXT="${OUTPUT##*.}"
+
+case "$EXT" in
+  wav|WAV)
+    afconvert -f WAVE -d LEI16 "$INPUT" "$OUTPUT"
+    ;;
+  m4a|M4A)
+    afconvert -f m4af -d aac "$INPUT" "$OUTPUT"
+    ;;
+  aac|AAC)
+    afconvert -f adts -d aac "$INPUT" "$OUTPUT"
+    ;;
+  aiff|AIFF)
+    afconvert -f AIFF -d BEI16 "$INPUT" "$OUTPUT"
+    ;;
+  *)
+    afconvert "$INPUT" "$OUTPUT"
+    ;;
+esac
+
+echo "Converted audio: $INPUT -> $OUTPUT"

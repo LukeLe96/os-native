@@ -1,0 +1,183 @@
+#!/usr/bin/env python3
+"""
+os-native-init: Hardware & OS Environment Inspector and Optimization Bootstrapper
+Part of the Zero-Token Native OS Superpower Suite.
+
+Functions:
+1. Performs deep local hardware, kernel, architecture, and tool inventory inspection.
+2. Evaluates existing zero-token capabilities vs recommended optimization packages.
+3. Enforces strict privacy consent before querying external web sources with host fingerprints.
+4. Generates an actionable optimization roadmap for AI Agents.
+
+Language: English (Mandatory)
+"""
+
+import sys
+import os
+import platform
+import subprocess
+import shutil
+import json
+
+SYSTEM = platform.system()
+ARCH = platform.machine()
+RELEASE = platform.release()
+VERSION = platform.version()
+
+def check_command(cmd):
+    return shutil.which(cmd) is not None
+
+def inspect_environment():
+    inventory = {
+        "os": SYSTEM,
+        "arch": ARCH,
+        "release": RELEASE,
+        "version": VERSION,
+        "hostname": platform.node(),
+        "available_tools": {},
+        "missing_recommended_tools": [],
+        "native_capabilities": []
+    }
+
+    if SYSTEM == "Darwin":
+        # macOS Inspection
+        tools = ["swift", "sips", "afconvert", "say", "mdfind", "screencapture", "caffeinate", "purge", "networkQuality", "ditto"]
+        for t in tools:
+            inventory["available_tools"][t] = check_command(t)
+            if not inventory["available_tools"][t]:
+                inventory["missing_recommended_tools"].append(t)
+        
+        inventory["native_capabilities"] = [
+            "Apple Vision (OCR, Background Removal, Barcode, Face, Hand & Body Pose)",
+            "Apple PDFKit (Text Extraction & Image Rendering)",
+            "Apple Media Engine (Hardware Accelerated Video Trimming & Transcoding)",
+            "CoreAudio (Sub-millisecond Audio Format Conversion)",
+            "Universal Clipboard (Seamless Apple Ecosystem Continuity)",
+            "Spotlight Metadata Engine (mdfind Deep Sub-second File Search)"
+        ]
+
+    elif SYSTEM == "Linux":
+        # Linux Inspection
+        tools = ["tesseract", "pdftotext", "pdftoppm", "sox", "ffmpeg", "notify-send", "wl-copy", "xclip", "plocate", "systemd-inhibit"]
+        for t in tools:
+            inventory["available_tools"][t] = check_command(t)
+            if not inventory["available_tools"][t]:
+                inventory["missing_recommended_tools"].append(t)
+        
+        inventory["native_capabilities"] = [
+            "Zero Overhead POSIX Execution",
+            "Cgroups v2 & Systemd Process Sandboxing",
+            "High Throughput Network & Epoll Socket Layer"
+        ]
+
+    elif SYSTEM == "Windows":
+        # Windows Inspection
+        tools = ["powershell", "cmdkey", "curl"]
+        for t in tools:
+            inventory["available_tools"][t] = check_command(t)
+            if not inventory["available_tools"][t]:
+                inventory["missing_recommended_tools"].append(t)
+        
+        inventory["native_capabilities"] = [
+            "WinRT Windows.Media.Ocr (Built-in Offline OCR)",
+            "System.Speech (SAPI Text-to-Speech & Voice Recognition)",
+            "Windows Defender CLI (MpCmdRun Automated Malware Scanning)",
+            "DirectML & Hardware Acceleration",
+            "Windows Search OLE DB SQL Engine"
+        ]
+
+    return inventory
+
+def prompt_privacy_consent():
+    print("\n" + "=" * 70)
+    print("🔒 PRIVACY & SECURITY GUARDRAIL:")
+    print("=" * 70)
+    print("The agent is preparing to search external online sources with your host")
+    print(f"telemetry: [OS: {SYSTEM}, Architecture: {ARCH}, Kernel: {RELEASE}].")
+    print("Because hardware and OS versions constitute sensitive host fingerprints,")
+    print("your explicit authorization is required prior to transmitting this data.\n")
+    
+    # Check if run with non-interactive flag
+    if "--consent" in sys.argv:
+        print("[CONSENT GRANTED via --consent flag]")
+        return True
+    elif "--no-consent" in sys.argv:
+        print("[CONSENT DENIED via --no-consent flag]")
+        return False
+
+    try:
+        choice = input("Do you authorize querying external web sources with this OS fingerprint? (y/N): ").strip().lower()
+        return choice in ["y", "yes"]
+    except (EOFError, KeyboardInterrupt):
+        return False
+
+def generate_agent_search_recommendations(inventory):
+    queries = []
+    if SYSTEM == "Darwin":
+        queries.append(f"macOS {RELEASE} Apple Silicon hidden CLI tools optimization developer")
+        queries.append("macOS Apple Vision framework command line swift tools github")
+    elif SYSTEM == "Linux":
+        distro = "Linux"
+        queries.append(f"{distro} {ARCH} zero token native AI tools CLI github")
+        queries.append("lightweight poppler libvips tesseract cli pipeline linux")
+    elif SYSTEM == "Windows":
+        queries.append(f"Windows {RELEASE} WinRT PowerShell native OCR DirectML tools github")
+        queries.append("Windows Copilot Runtime developer CLI utilities powershell")
+
+    return queries
+
+def main():
+    print("=" * 70)
+    print(f"🚀 os-native-init: System Inventory & Capability Profiler")
+    print("=" * 70)
+
+    inventory = inspect_environment()
+
+    print(f"\n[HOST OVERVIEW]")
+    print(f"- Operating System : {inventory['os']}")
+    print(f"- Architecture     : {inventory['arch']}")
+    print(f"- Kernel Release   : {inventory['release']}")
+    print(f"- Machine Hostname : {inventory['hostname']}")
+
+    print(f"\n[NATIVE HARDWARE/OS CAPABILITIES]")
+    for cap in inventory["native_capabilities"]:
+        print(f"  ✓ {cap}")
+
+    print(f"\n[TOOL INVENTORY AUDIT]")
+    for tool, available in inventory["available_tools"].items():
+        mark = "✓ INSTALLED" if available else "✗ MISSING"
+        print(f"  {mark:<13} : {tool}")
+
+    if inventory["missing_recommended_tools"]:
+        print(f"\n⚠️ RECOMMENDED OPTIMIZATIONS:")
+        print(f"  The following tools can further unlock zero-token capabilities on this {SYSTEM} machine:")
+        for tool in inventory["missing_recommended_tools"]:
+            print(f"  - {tool}")
+    else:
+        print(f"\n✨ EXCELLENT: All baseline native tools are installed and ready!")
+
+    # Check for external research mode
+    if "--web-recon" in sys.argv:
+        consent = prompt_privacy_consent()
+        if consent:
+            print("\n[AGENT WEB RECONNAISSANCE INSTRUCTIONS]")
+            print("You are authorized to execute the following web searches to discover additional")
+            print("specialized packages and optimizations for this machine:")
+            queries = generate_agent_search_recommendations(inventory)
+            for i, q in enumerate(queries, 1):
+                print(f"  Query {i}: \"{q}\"")
+            print("\nInstruction for AI Agent:")
+            print("Evaluate query results strictly for offline, zero-token, native utilities.")
+            print("Synthesize recommendations and present them to the user for confirmation.")
+        else:
+            print("\n🚫 Operation aborted by user. No host fingerprints were transmitted to the web.")
+
+    # Export JSON if requested
+    if "--json" in sys.argv:
+        print("\n[JSON INVENTORY DUMP]")
+        print(json.dumps(inventory, indent=2))
+
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+if [ "$1" == "--paste" ] || [ "$1" == "-p" ]; then
+  pbpaste
+elif [ "$1" == "--copy" ] || [ "$1" == "-c" ]; then
+  if [ -n "$2" ]; then
+    printf "%s" "$2" | pbcopy
+    echo "Copied text to macOS clipboard!"
+  else
+    cat | pbcopy
+    echo "Copied stdin to macOS clipboard!"
+  fi
+else
+  echo "Usage:"
+  echo "  apple-clipboard --copy <text>     (or pipe: echo '...' | apple-clipboard --copy)"
+  echo "  apple-clipboard --paste"
+  exit 1
+fi

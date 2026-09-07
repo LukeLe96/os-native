@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""
+os-native: Unified Cross-Platform Zero-Token OS Superpower Runner
+Auto-detects macOS (Darwin), Linux, or Windows and delegates to the native engine.
+"""
+
+import sys
+import os
+import platform
+import subprocess
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
+SYSTEM = platform.system()  # 'Darwin', 'Linux', 'Windows'
+
+def run_cmd(cmd, check=True):
+    try:
+        res = subprocess.run(cmd, shell=isinstance(cmd, str))
+        return res.returncode
+    except Exception as e:
+        print(f"Error executing command: {e}", file=sys.stderr)
+        return 1
+
+def handle_ocr(args):
+    if not args:
+        print("Usage: os-native ocr <image_path>")
+        return 1
+    image_path = args[0]
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-ocr")
+        return run_cmd([bin_path, image_path])
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-ocr.sh")
+        return run_cmd([script_path, image_path])
+    elif SYSTEM == "Windows":
+        script_path = os.path.join(PROJECT_ROOT, "windows", "win-ocr.ps1")
+        return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-ImagePath", image_path])
+    else:
+        print(f"Unsupported OS: {SYSTEM}")
+        return 1
+
+def handle_docx(args):
+    if not args:
+        print("Usage: os-native docx <file.docx>")
+        return 1
+    docx_path = args[0]
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-docx")
+        return run_cmd([bin_path, docx_path])
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-docx.sh")
+        return run_cmd([script_path, docx_path])
+    elif SYSTEM == "Windows":
+        script_path = os.path.join(PROJECT_ROOT, "windows", "win-docx.ps1")
+        return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-DocxPath", docx_path])
+    return 1
+
+def handle_notify(args):
+    title = args[0] if len(args) > 0 else "Hermes Agent"
+    msg = args[1] if len(args) > 1 else "Task completed"
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-notify")
+        return run_cmd([bin_path, title, msg])
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-notify.sh")
+        return run_cmd([script_path, title, msg])
+    elif SYSTEM == "Windows":
+        script_path = os.path.join(PROJECT_ROOT, "windows", "win-notify.ps1")
+        return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-Title", title, "-Message", msg])
+    return 1
+
+def handle_telemetry(args):
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-telemetry")
+        return run_cmd([bin_path])
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-telemetry.sh")
+        return run_cmd([script_path])
+    elif SYSTEM == "Windows":
+        script_path = os.path.join(PROJECT_ROOT, "windows", "win-telemetry.ps1")
+        return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path])
+    return 1
+
+def handle_clipboard(args):
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-clipboard")
+        return run_cmd([bin_path] + args)
+    elif SYSTEM == "Linux":
+        script_path = os.path.join(PROJECT_ROOT, "linux", "linux-clipboard.sh")
+        return run_cmd([script_path] + args)
+    elif SYSTEM == "Windows":
+        mode = "copy" if (args and args[0] in ["--copy", "-c"]) else "paste"
+        content = args[1] if len(args) > 1 else ""
+        script_path = os.path.join(PROJECT_ROOT, "windows", "win-clipboard.ps1")
+        return run_cmd(["powershell", "-ExecutionPolicy", "Bypass", "-File", script_path, "-Mode", mode, "-Content", content])
+    return 1
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
+        print("os-native: Zero-Token Cross-Platform Superpower CLI")
+        print(f"Detected Platform: {SYSTEM}")
+        print("\nCommands:")
+        print("  ocr <image_path>                  Extract text from image (Native WinRT / Vision / Tesseract)")
+        print("  docx <file.docx>                  Read word document as plain text")
+        print("  notify <title> <message>          Send system desktop notification")
+        print("  clipboard --copy <text> / --paste Sync clipboard across device")
+        print("  telemetry                         Display host resource status (RAM, CPU, Uptime)")
+        print("  macos <tool> ...                  Directly call macOS native tool (Darwin only)")
+        return 0
+
+    subcmd = sys.argv[1]
+    args = sys.argv[2:]
+
+    if subcmd == "ocr":
+        return handle_ocr(args)
+    elif subcmd == "docx":
+        return handle_docx(args)
+    elif subcmd == "notify":
+        return handle_notify(args)
+    elif subcmd == "telemetry":
+        return handle_telemetry(args)
+    elif subcmd == "clipboard":
+        return handle_clipboard(args)
+    elif subcmd == "macos" and SYSTEM == "Darwin":
+        tool = args[0] if args else ""
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", tool)
+        return run_cmd([bin_path] + args[1:])
+    else:
+        print(f"Unknown command '{subcmd}'. Run 'os-native --help' for available commands.")
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

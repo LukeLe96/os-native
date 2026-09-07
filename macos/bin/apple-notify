@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: apple-notify <title> <message> [sound_name=Glass]"
+  echo "Available sounds: Basso, Blow, Bottle, Frog, Funk, Glass, Hero, Morse, Ping, Pop, Purr, Sosumi, Submarine, Tink"
+  exit 1
+fi
+TITLE="$1"
+MSG="$2"
+SOUND="${3:-Glass}"
+
+osascript -e "display notification \"$MSG\" with title \"$TITLE\" sound name \"$SOUND\""
+echo "Notification sent: [$TITLE] $MSG (sound: $SOUND)"

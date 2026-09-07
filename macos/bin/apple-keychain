@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+CMD="$1"
+SERVICE="$2"
+ACCOUNT="$3"
+SECRET="$4"
+
+if [ "$CMD" == "set" ]; then
+  if [ -z "$SERVICE" ] || [ -z "$ACCOUNT" ] || [ -z "$SECRET" ]; then
+    echo "Usage: apple-keychain set <service> <account> <secret>"
+    exit 1
+  fi
+  security add-generic-password -U -s "$SERVICE" -a "$ACCOUNT" -w "$SECRET"
+  echo "Stored secret in Keychain for service '$SERVICE', account '$ACCOUNT'"
+
+elif [ "$CMD" == "get" ]; then
+  if [ -z "$SERVICE" ] || [ -z "$ACCOUNT" ]; then
+    echo "Usage: apple-keychain get <service> <account>"
+    exit 1
+  fi
+  security find-generic-password -s "$SERVICE" -a "$ACCOUNT" -w
+
+elif [ "$CMD" == "delete" ]; then
+  if [ -z "$SERVICE" ] || [ -z "$ACCOUNT" ]; then
+    echo "Usage: apple-keychain delete <service> <account>"
+    exit 1
+  fi
+  security delete-generic-password -s "$SERVICE" -a "$ACCOUNT"
+  echo "Deleted secret for service '$SERVICE', account '$ACCOUNT'"
+
+else
+  echo "Usage:"
+  echo "  apple-keychain set <service> <account> <secret>"
+  echo "  apple-keychain get <service> <account>"
+  echo "  apple-keychain delete <service> <account>"
+  exit 1
+fi

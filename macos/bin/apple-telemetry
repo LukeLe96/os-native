@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+echo "=== MAC MINI HARDWARE & SYSTEM TELEMETRY ==="
+echo "- Hostname: $(hostname)"
+echo "- Uptime: $(uptime | sed 's/.*up \([^,]*\), .*/\1/')"
+echo "- OS: $(sw_vers -productName) $(sw_vers -productVersion) (Build $(sw_vers -buildVersion))"
+echo "- Chip / Architecture: $(uname -m)"
+
+# Unified Memory via vm_stat
+PAGE_SIZE=$(vm_stat | grep "page size of" | awk '{print $8}')
+PAGE_SIZE=${PAGE_SIZE:-16384}
+PAGES_FREE=$(vm_stat | grep "Pages free:" | awk '{print $3}' | tr -d '.')
+PAGES_ACTIVE=$(vm_stat | grep "Pages active:" | awk '{print $3}' | tr -d '.')
+PAGES_INACTIVE=$(vm_stat | grep "Pages inactive:" | awk '{print $3}' | tr -d '.')
+PAGES_WIRED=$(vm_stat | grep "Pages wired down:" | awk '{print $4}' | tr -d '.')
+
+MEM_FREE_MB=$(( PAGES_FREE * PAGE_SIZE / 1024 / 1024 ))
+MEM_ACTIVE_MB=$(( PAGES_ACTIVE * PAGE_SIZE / 1024 / 1024 ))
+MEM_INACTIVE_MB=$(( PAGES_INACTIVE * PAGE_SIZE / 1024 / 1024 ))
+MEM_WIRED_MB=$(( PAGES_WIRED * PAGE_SIZE / 1024 / 1024 ))
+
+echo "- Unified Memory Status:"
+echo "  * Free: ${MEM_FREE_MB} MB"
+echo "  * Active: ${MEM_ACTIVE_MB} MB"
+echo "  * Inactive: ${MEM_INACTIVE_MB} MB"
+echo "  * Wired (System Core): ${MEM_WIRED_MB} MB"
+
+# CPU load averages
+LOAD=$(sysctl -n vm.loadavg | awk '{print $2, $3, $4}')
+echo "- CPU Load Average (1m, 5m, 15m): $LOAD"

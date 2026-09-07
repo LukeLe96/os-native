@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: apple-tts <text> <output_file.m4a|output_file.aiff> [voice_name]"
+  echo "Available Vietnamese voice: Linh"
+  echo "Available English voices: Samantha, Alex, Fred, etc."
+  exit 1
+fi
+TEXT="$1"
+OUT="$2"
+VOICE="${3:-Linh}"
+say -v "$VOICE" -o "$OUT" "$TEXT"
+echo "Generated TTS audio: $OUT with voice: $VOICE"

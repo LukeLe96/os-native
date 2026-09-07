@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+if [ -z "$1" ]; then
+  echo "Usage: apple-meta <file_path>"
+  exit 1
+fi
+mdls "$1"

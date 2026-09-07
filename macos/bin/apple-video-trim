@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+  echo "Usage: apple-video-trim <input_movie> <duration_in_seconds> <output_movie> [start_time_seconds]"
+  exit 1
+fi
+INPUT="$1"
+DURATION="$2"
+OUTPUT="$3"
+START="${4:-0}"
+
+avconvert -s "$INPUT" -o "$OUTPUT" -p PresetHighestQuality --start "$START" --duration "$DURATION" --replace
+echo "Trimmed video: start=${START}s, duration=${DURATION}s -> $OUTPUT"

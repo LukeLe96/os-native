@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+if [ -z "$1" ]; then
+  echo "Usage: apple-docx <input.docx|input.doc|input.rtf> [output.txt]"
+  exit 1
+fi
+INPUT="$1"
+OUTPUT="${2:-}"
+if [ -n "$OUTPUT" ]; then
+  textutil -convert txt "$INPUT" -output "$OUTPUT"
+  echo "Converted $INPUT -> $OUTPUT"
+else
+  textutil -convert txt "$INPUT" -stdout
+fi

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+if [ -z "$1" ]; then
+  echo "Usage: apple-screenshot <output.png> [x,y,w,h]"
+  exit 1
+fi
+OUTPUT="$1"
+RECT="${2:-}"
+if [ -n "$RECT" ]; then
+  screencapture -x -R "$RECT" "$OUTPUT"
+else
+  screencapture -x "$OUTPUT"
+fi
+echo "Screenshot captured: $OUTPUT"

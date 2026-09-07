@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+if [ -z "$1" ]; then
+  echo "Usage: apple-caffeinate <command...>"
+  echo "Runs the given command while preventing Mac mini from sleeping or thermal throttling (App Nap)."
+  exit 1
+fi
+
+echo "[apple-caffeinate] Running command with hardware sleep lock: $@"
+caffeinate -i -s -m "$@"

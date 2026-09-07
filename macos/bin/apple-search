@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+if [ -z "$1" ]; then
+  echo "Usage: apple-search <query> [search_directory]"
+  exit 1
+fi
+QUERY="$1"
+DIR="${2:-}"
+if [ -n "$DIR" ]; then
+  mdfind -onlyin "$DIR" "$QUERY"
+else
+  mdfind "$QUERY"
+fi

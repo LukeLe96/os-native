@@ -21,6 +21,17 @@ def run_cmd(cmd, check=True):
         print(f"Error executing command: {e}", file=sys.stderr)
         return 1
 
+def handle_ui_detect(args):
+    if not args:
+        print("Usage: os-native ui-detect <image_path> [options]")
+        return 1
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-ui-detect")
+        return run_cmd([bin_path] + args)
+    else:
+        print(f"ui-detect is currently implemented natively on macOS (Apple Vision). {SYSTEM} support coming soon.", file=sys.stderr)
+        return 1
+
 def handle_ocr(args):
     if not args:
         print("Usage: os-native ocr <image_path>")
@@ -176,6 +187,7 @@ def main():
         print(f"Detected Platform: {SYSTEM}")
         print("\nUniversal Commands:")
         print("  ocr <image_path>                  Extract text from image (WinRT / Vision / Tesseract)")
+        print("  ui-detect <image_path> [options]  Native UI element & target detection (macOS)")
         print("  search <query> [path]             Sub-second indexed file search (Spotlight / OLEDB / Plocate)")
         print("  docx <file.docx> [out.txt]        Read Word document as plain text")
         print("  pdf extract|render <file.pdf> ... PDF text parsing or page rendering")
@@ -191,6 +203,7 @@ def main():
     args = sys.argv[2:]
 
     handlers = {
+        "ui-detect": handle_ui_detect,
         "ocr": handle_ocr,
         "search": handle_search,
         "docx": handle_docx,

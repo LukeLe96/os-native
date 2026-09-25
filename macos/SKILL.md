@@ -1,13 +1,13 @@
 ---
 name: mac-mini-native
 description: "Use when running native Mac mini tasks (OCR, bg removal, QR, docx, PDF, poses, TTS, video trim, clipboard, notify, keychain, telemetry, Spotlight)."
-version: 2.5.0
+version: 2.6.0
 author: Tahi
 license: MIT
 platforms: [macos]
 metadata:
   hermes:
-    tags: [MacMini, AppleSilicon, NeuralEngine, NativeAI, Vision, PDFKit, SIPS, Spotlight, Docx, MediaEngine, Keychain, Clipboard, Telemetry]
+    tags: [MacMini, AppleSilicon, NeuralEngine, NativeAI, Vision, PDFKit, SIPS, Spotlight, Docx, MediaEngine, Keychain, Clipboard, Telemetry, UIDetection]
     related_skills: [os-native, os-native-init, apple-ai]
 prerequisites:
   commands: [swift]
@@ -17,7 +17,7 @@ prerequisites:
 
 Dedicated toolkit designed specifically for Apple Silicon M-series hardware and the Apple Neural Engine (ANE). Runs 100% offline, guarantees complete data privacy, executes with sub-second latency, consumes zero API tokens, and requires no bulky third-party libraries.
 
-All 23 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`~/.hermes/bin/` and `~/.local/bin/`).
+All 24 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`~/.hermes/bin/` and `~/.local/bin/`).
 
 ---
 
@@ -26,6 +26,7 @@ All 23 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`
 ### 1. Computer Vision & Neural Engine
 * `apple-bg-remove <input> <output.png>`: Subject lifting / transparent PNG generation (~0.24s).
 * `apple-ocr <input>`: Live Text OCR (Native Vietnamese & English support, ~0.21s).
+* `apple-ui-detect <input> [--target <query>] [--type <type>] [--draw out.png]`: Native UI element & interactive target detector (~0.04s - 0.3s, zero tokens).
 * `apple-barcode <input>`: QR and Barcode decoder (0.02s).
 * `apple-classify <input>`: Zero-shot image classification and tagging (0.05s).
 * `apple-face-detect <input>`: Facial bounding box and landmark detection (0.05s).

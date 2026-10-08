@@ -23,9 +23,166 @@ SYSTEM = platform.system()
 ARCH = platform.machine()
 RELEASE = platform.release()
 VERSION = platform.version()
+SUITE_VERSION = "2.7.1"
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
+
+# Native tool catalog per platform: tool -> {kind, category, engine, requires}.
+# kind: "swift" (compiled from macos/src via macos/build.sh), "binary" (prebuilt, no source), "shell", "python",
+#       "powershell". requires: external commands the tool shells out to.
+AVAILABLE_TOOLS = {
+    "Darwin": {
+        "dir": "macos/bin",
+        "tools": {
+            "apple-ocr":             {"kind": "binary", "category": "vision",   "engine": "Vision VNRecognizeTextRequest"},
+            "apple-ocr-json":        {"kind": "swift",  "category": "vision",   "engine": "Vision VNRecognizeTextRequest (bounding boxes)"},
+            "apple-ui-detect":       {"kind": "swift",  "category": "vision",   "engine": "Vision text + rectangle detection"},
+            "apple-bg-remove":       {"kind": "binary", "category": "vision",   "engine": "Vision VNGenerateForegroundInstanceMask"},
+            "apple-barcode":         {"kind": "binary", "category": "vision",   "engine": "Vision VNDetectBarcodesRequest"},
+            "apple-classify":        {"kind": "binary", "category": "vision",   "engine": "Vision VNClassifyImageRequest"},
+            "apple-face-detect":     {"kind": "swift",  "category": "vision",   "engine": "Vision VNDetectFaceLandmarksRequest"},
+            "apple-hand-pose":       {"kind": "swift",  "category": "vision",   "engine": "Vision VNDetectHumanHandPoseRequest"},
+            "apple-body-pose":       {"kind": "swift",  "category": "vision",   "engine": "Vision VNDetectHumanBodyPoseRequest"},
+            "apple-docx":            {"kind": "shell",  "category": "document", "engine": "textutil", "requires": ["textutil"]},
+            "apple-pdf-extract":     {"kind": "swift",  "category": "document", "engine": "PDFKit"},
+            "apple-pdf-render":      {"kind": "swift",  "category": "document", "engine": "PDFKit + AppKit"},
+            "apple-video-trim":      {"kind": "shell",  "category": "media",    "engine": "avconvert (Media Engine)", "requires": ["avconvert"]},
+            "apple-video-frames":    {"kind": "swift",  "category": "media",    "engine": "AVFoundation + Vision"},
+            "apple-video-transcode": {"kind": "python", "category": "media",    "engine": "VideoToolbox via ffmpeg", "requires": ["ffmpeg", "ffprobe"]},
+            "apple-img-resize":      {"kind": "shell",  "category": "media",    "engine": "sips", "requires": ["sips"]},
+            "apple-meta":            {"kind": "shell",  "category": "media",    "engine": "Spotlight mdls", "requires": ["mdls"]},
+            "apple-tts":             {"kind": "shell",  "category": "audio",    "engine": "say (Speech Synthesis)", "requires": ["say"]},
+            "apple-audio-convert":   {"kind": "shell",  "category": "audio",    "engine": "CoreAudio afconvert", "requires": ["afconvert"]},
+            "apple-sound-classify":  {"kind": "swift",  "category": "audio",    "engine": "SoundAnalysis SNClassifySoundRequest"},
+            "apple-semantic":        {"kind": "swift",  "category": "language", "engine": "NaturalLanguage NLEmbedding (word)"},
+            "apple-embed":           {"kind": "swift",  "category": "language", "engine": "NaturalLanguage NLEmbedding (sentence)"},
+            "apple-clipboard":       {"kind": "shell",  "category": "system",   "engine": "pbcopy / pbpaste", "requires": ["pbcopy", "pbpaste"]},
+            "apple-notify":          {"kind": "shell",  "category": "system",   "engine": "Notification Center (osascript)", "requires": ["osascript"]},
+            "apple-keychain":        {"kind": "shell",  "category": "system",   "engine": "Keychain (security)", "requires": ["security"]},
+            "apple-telemetry":       {"kind": "shell",  "category": "system",   "engine": "vm_stat / sysctl", "requires": ["vm_stat", "sysctl"]},
+            "apple-caffeinate":      {"kind": "shell",  "category": "system",   "engine": "caffeinate", "requires": ["caffeinate"]},
+            "apple-search":          {"kind": "shell",  "category": "system",   "engine": "Spotlight mdfind", "requires": ["mdfind"]},
+            "apple-screenshot":      {"kind": "shell",  "category": "system",   "engine": "screencapture", "requires": ["screencapture"]},
+            "apple-ls":              {"kind": "shell",  "category": "system",   "engine": "python3 os.stat", "requires": ["python3"]},
+        },
+    },
+    "Linux": {
+        "dir": "linux",
+        "tools": {
+            "linux-ocr.sh":           {"kind": "shell", "category": "vision",   "engine": "Tesseract", "requires": ["tesseract"]},
+            "linux-pdf.sh":           {"kind": "shell", "category": "document", "engine": "Poppler", "requires": ["pdftotext", "pdftoppm"]},
+            "linux-docx.sh":          {"kind": "shell", "category": "document", "engine": "unzip OpenXML"},
+            "linux-audio-convert.sh": {"kind": "shell", "category": "audio",    "engine": "sox / ffmpeg"},
+            "linux-tts.sh":           {"kind": "shell", "category": "audio",    "engine": "espeak-ng / piper"},
+            "linux-clipboard.sh":     {"kind": "shell", "category": "system",   "engine": "wl-clipboard / xclip"},
+            "linux-notify.sh":        {"kind": "shell", "category": "system",   "engine": "libnotify", "requires": ["notify-send"]},
+            "linux-telemetry.sh":     {"kind": "shell", "category": "system",   "engine": "/proc"},
+            "linux-search.sh":        {"kind": "shell", "category": "system",   "engine": "plocate / locate"},
+            "linux-caffeinate.sh":    {"kind": "shell", "category": "system",   "engine": "systemd-inhibit", "requires": ["systemd-inhibit"]},
+        },
+    },
+    "Windows": {
+        "dir": "windows",
+        "tools": {
+            "win-ocr.ps1":       {"kind": "powershell", "category": "vision",   "engine": "WinRT Windows.Media.Ocr"},
+            "win-screen.ps1":    {"kind": "powershell", "category": "vision",   "engine": ".NET System.Drawing"},
+            "win-docx.ps1":      {"kind": "powershell", "category": "document", "engine": "System.IO.Compression OpenXML"},
+            "win-tts.ps1":       {"kind": "powershell", "category": "audio",    "engine": "System.Speech SAPI"},
+            "win-clipboard.ps1": {"kind": "powershell", "category": "system",   "engine": "Set/Get-Clipboard"},
+            "win-notify.ps1":    {"kind": "powershell", "category": "system",   "engine": "Windows Toast"},
+            "win-keychain.ps1":  {"kind": "powershell", "category": "system",   "engine": "Credential Manager (cmdkey)", "requires": ["cmdkey"]},
+            "win-telemetry.ps1": {"kind": "powershell", "category": "system",   "engine": "CIM / WMI"},
+            "win-scan.ps1":      {"kind": "powershell", "category": "system",   "engine": "Windows Defender MpCmdRun"},
+            "win-search.ps1":    {"kind": "powershell", "category": "system",   "engine": "Windows Search OLE DB"},
+        },
+    },
+}
+
+# Capability -> tools that deliver it. A capability is reported as available when all its tools are usable.
+CAPABILITIES = {
+    "Darwin": {
+        "Apple Vision OCR & Structured Text (bounding boxes)": ["apple-ocr", "apple-ocr-json"],
+        "Apple Vision UI Element & Target Detection": ["apple-ui-detect"],
+        "Apple Vision Background Removal, Barcode & Classification": ["apple-bg-remove", "apple-barcode", "apple-classify"],
+        "Apple Vision Face, Hand & Body Pose": ["apple-face-detect", "apple-hand-pose", "apple-body-pose"],
+        "Apple PDFKit (Text Extraction & Image Rendering)": ["apple-pdf-extract", "apple-pdf-render"],
+        "Office Documents via TextEngine (docx/doc/rtf)": ["apple-docx"],
+        "Apple Media Engine (Hardware Video Trimming & Keyframes)": ["apple-video-trim", "apple-video-frames"],
+        "VideoToolbox Hardware Transcoding (H.264/HEVC/ProRes)": ["apple-video-transcode"],
+        "CoreAudio (Sub-millisecond Audio Format Conversion) & Offline TTS": ["apple-audio-convert", "apple-tts"],
+        "SoundAnalysis (300+ Class Sound Event Classification)": ["apple-sound-classify"],
+        "NaturalLanguage Embeddings (512-dim Sentence Vectors & Word Similarity)": ["apple-embed", "apple-semantic"],
+        "Spotlight Metadata Engine (mdfind Sub-second File Search)": ["apple-search", "apple-meta"],
+        "Universal Clipboard, Notifications & Keychain": ["apple-clipboard", "apple-notify", "apple-keychain"],
+        "Host Telemetry & Sleep Inhibition": ["apple-telemetry", "apple-caffeinate"],
+    },
+    "Linux": {
+        "Tesseract OCR": ["linux-ocr.sh"],
+        "Poppler PDF Text & Rendering": ["linux-pdf.sh"],
+        "Zero Overhead POSIX Execution (search, telemetry, clipboard, notify)": [
+            "linux-search.sh", "linux-telemetry.sh", "linux-clipboard.sh", "linux-notify.sh"],
+        "Systemd Sleep Inhibition": ["linux-caffeinate.sh"],
+    },
+    "Windows": {
+        "WinRT Windows.Media.Ocr (Built-in Offline OCR)": ["win-ocr.ps1"],
+        "System.Speech (SAPI Text-to-Speech)": ["win-tts.ps1"],
+        "Windows Defender CLI (MpCmdRun Automated Malware Scanning)": ["win-scan.ps1"],
+        "Windows Search OLE DB SQL Engine": ["win-search.ps1"],
+        "Credential Manager, Clipboard & Toast Notifications": ["win-keychain.ps1", "win-clipboard.ps1", "win-notify.ps1"],
+    },
+}
 
 def check_command(cmd):
     return shutil.which(cmd) is not None
+
+def swift_source_for(tool):
+    src_dir = os.path.join(PROJECT_ROOT, "macos", "src")
+    for name in (tool + ".swift", tool.replace("-", "_") + ".swift"):
+        path = os.path.join(src_dir, name)
+        if os.path.isfile(path):
+            return path
+    return None
+
+def audit_native_tools(system):
+    """Audit the suite's own tools for this platform: presence, executability, dependencies, staleness."""
+    catalog = AVAILABLE_TOOLS.get(system)
+    if not catalog:
+        return {}, [], []
+    tool_dir = os.path.join(PROJECT_ROOT, catalog["dir"])
+    audit = {}
+    for tool, spec in catalog["tools"].items():
+        path = os.path.join(tool_dir, tool)
+        present = os.path.isfile(path)
+        missing_deps = [d for d in spec.get("requires", []) if not check_command(d)]
+        entry = {
+            "category": spec["category"],
+            "kind": spec["kind"],
+            "engine": spec["engine"],
+            "path": os.path.relpath(path, PROJECT_ROOT),
+            "present": present,
+            "executable": present and os.access(path, os.X_OK),
+            "missing_dependencies": missing_deps,
+        }
+        if spec["kind"] == "swift":
+            src = swift_source_for(tool)
+            entry["source"] = os.path.relpath(src, PROJECT_ROOT) if src else None
+            # 2s tolerance: a fresh git checkout writes source and binary with near-identical mtimes.
+            entry["stale"] = bool(present and src and os.path.getmtime(src) - os.path.getmtime(path) > 2)
+        entry["status"] = (
+            "missing" if not present else
+            "not-executable" if not entry["executable"] else
+            "missing-deps" if missing_deps else
+            "stale" if entry.get("stale") else
+            "ok"
+        )
+        audit[tool] = entry
+    uncataloged = []
+    if os.path.isdir(tool_dir):
+        uncataloged = sorted(f for f in os.listdir(tool_dir)
+                             if not f.startswith(".") and f not in catalog["tools"])
+    usable = {t for t, e in audit.items() if e["status"] in ("ok", "stale")}
+    capabilities = [cap for cap, tools in CAPABILITIES.get(system, {}).items()
+                    if all(t in usable for t in tools)]
+    return audit, uncataloged, capabilities
 
 def inspect_environment():
     inventory = {
@@ -34,57 +191,34 @@ def inspect_environment():
         "release": RELEASE,
         "version": VERSION,
         "hostname": platform.node(),
+        "suite_version": SUITE_VERSION,
         "available_tools": {},
         "missing_recommended_tools": [],
-        "native_capabilities": []
+        "native_capabilities": [],
+        "native_tools": {},
+        "uncataloged_tools": []
     }
 
     if SYSTEM == "Darwin":
         # macOS Inspection
-        tools = ["swift", "sips", "afconvert", "say", "mdfind", "screencapture", "caffeinate", "purge", "networkQuality", "ditto"]
-        for t in tools:
-            inventory["available_tools"][t] = check_command(t)
-            if not inventory["available_tools"][t]:
-                inventory["missing_recommended_tools"].append(t)
-        
-        inventory["native_capabilities"] = [
-            "Apple Vision (OCR, Background Removal, Barcode, Face, Hand & Body Pose)",
-            "Apple PDFKit (Text Extraction & Image Rendering)",
-            "Apple Media Engine (Hardware Accelerated Video Trimming & Transcoding)",
-            "CoreAudio (Sub-millisecond Audio Format Conversion)",
-            "Universal Clipboard (Seamless Apple Ecosystem Continuity)",
-            "Spotlight Metadata Engine (mdfind Deep Sub-second File Search)"
-        ]
-
+        tools = ["swiftc", "sips", "afconvert", "say", "mdfind", "screencapture", "caffeinate", "purge",
+                 "networkQuality", "ditto", "avconvert", "textutil", "ffmpeg", "ffprobe"]
     elif SYSTEM == "Linux":
-        # Linux Inspection
         tools = ["tesseract", "pdftotext", "pdftoppm", "sox", "ffmpeg", "notify-send", "wl-copy", "xclip", "plocate", "systemd-inhibit"]
-        for t in tools:
-            inventory["available_tools"][t] = check_command(t)
-            if not inventory["available_tools"][t]:
-                inventory["missing_recommended_tools"].append(t)
-        
-        inventory["native_capabilities"] = [
-            "Zero Overhead POSIX Execution",
-            "Cgroups v2 & Systemd Process Sandboxing",
-            "High Throughput Network & Epoll Socket Layer"
-        ]
-
     elif SYSTEM == "Windows":
-        # Windows Inspection
         tools = ["powershell", "cmdkey", "curl"]
-        for t in tools:
-            inventory["available_tools"][t] = check_command(t)
-            if not inventory["available_tools"][t]:
-                inventory["missing_recommended_tools"].append(t)
-        
-        inventory["native_capabilities"] = [
-            "WinRT Windows.Media.Ocr (Built-in Offline OCR)",
-            "System.Speech (SAPI Text-to-Speech & Voice Recognition)",
-            "Windows Defender CLI (MpCmdRun Automated Malware Scanning)",
-            "DirectML & Hardware Acceleration",
-            "Windows Search OLE DB SQL Engine"
-        ]
+    else:
+        tools = []
+
+    for t in tools:
+        inventory["available_tools"][t] = check_command(t)
+        if not inventory["available_tools"][t]:
+            inventory["missing_recommended_tools"].append(t)
+
+    audit, uncataloged, capabilities = audit_native_tools(SYSTEM)
+    inventory["native_tools"] = audit
+    inventory["uncataloged_tools"] = uncataloged
+    inventory["native_capabilities"] = capabilities
 
     return inventory
 
@@ -147,6 +281,24 @@ def main():
     for tool, available in inventory["available_tools"].items():
         mark = "✓ INSTALLED" if available else "✗ MISSING"
         print(f"  {mark:<13} : {tool}")
+
+    native = inventory["native_tools"]
+    if native:
+        ready = sum(1 for e in native.values() if e["status"] == "ok")
+        print(f"\n[OS-NATIVE SUITE AUDIT v{SUITE_VERSION}] {ready}/{len(native)} tools ready")
+        marks = {"ok": "✓ READY", "stale": "↻ STALE", "missing-deps": "⚠ DEPS",
+                 "not-executable": "✗ NO +x", "missing": "✗ MISSING"}
+        for tool, e in sorted(native.items(), key=lambda kv: (kv[1]["category"], kv[0])):
+            note = ""
+            if e["missing_dependencies"]:
+                note = f"  (needs: {', '.join(e['missing_dependencies'])})"
+            elif e["status"] == "stale":
+                note = "  (source newer than binary: ./macos/build.sh " + tool + ")"
+            elif e["status"] == "missing" and e["kind"] == "swift":
+                note = "  (build: ./macos/build.sh " + tool + ")"
+            print(f"  {marks[e['status']]:<10} [{e['category']:<8}] {tool:<24} {e['engine']}{note}")
+        if inventory["uncataloged_tools"]:
+            print(f"  ? Uncataloged files in {AVAILABLE_TOOLS[SYSTEM]['dir']}/: {', '.join(inventory['uncataloged_tools'])}")
 
     if inventory["missing_recommended_tools"]:
         print(f"\n⚠️ RECOMMENDED OPTIMIZATIONS:")

@@ -41,7 +41,7 @@ var i = 1
 while i < CommandLine.arguments.count {
     let arg = CommandLine.arguments[i]
     if arg == "--count" && i + 1 < CommandLine.arguments.count {
-        frameCount = Int(CommandLine.arguments[i + 1]) ?? 3
+        frameCount = max(1, Int(CommandLine.arguments[i + 1]) ?? 3)
         i += 2
     } else if arg == "--out-dir" && i + 1 < CommandLine.arguments.count {
         outDir = CommandLine.arguments[i + 1]
@@ -79,6 +79,13 @@ if duration <= 0 || duration.isNaN {
     exit(1)
 }
 
+do {
+    try FileManager.default.createDirectory(atPath: outDir, withIntermediateDirectories: true)
+} catch {
+    fputs("Error: Could not create output directory \(outDir): \(error.localizedDescription)\n", stderr)
+    exit(1)
+}
+
 let generator = AVAssetImageGenerator(asset: asset)
 generator.appliesPreferredTrackTransform = true
 generator.requestedTimeToleranceBefore = .zero
@@ -107,9 +114,11 @@ for (idx, sec) in targetTimes.enumerated() {
         let frameURL = URL(fileURLWithPath: frameFile)
         
         let bitmapRep = NSBitmapImageRep(cgImage: cgImage)
-        if let jpegData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: 0.85]) {
-            try jpegData.write(to: frameURL)
+        guard let jpegData = bitmapRep.representation(using: .jpeg, properties: [.compressionFactor: 0.85]) else {
+            fputs("Warning: Failed to encode frame at \(sec)s as JPEG\n", stderr)
+            continue
         }
+        try jpegData.write(to: frameURL)
         
         var analysis = FrameAnalysis(index: idx + 1, timestampSeconds: round(sec * 100) / 100, filePath: frameFile)
         
@@ -196,4 +205,9 @@ if jsonOutput {
     for a in analyses {
         print("  \(a.filePath)")
     }
+}
+
+if analyses.isEmpty {
+    fputs("Error: No frames could be extracted from \(videoPath)\n", stderr)
+    exit(1)
 }

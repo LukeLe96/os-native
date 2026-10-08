@@ -8,5 +8,10 @@ TITLE="$1"
 MSG="$2"
 SOUND="${3:-Glass}"
 
-osascript -e "display notification \"$MSG\" with title \"$TITLE\" sound name \"$SOUND\""
+# Pass values via argv (never interpolate into AppleScript source) to prevent AppleScript injection.
+osascript - "$TITLE" "$MSG" "$SOUND" <<'APPLESCRIPT'
+on run argv
+  display notification (item 2 of argv) with title (item 1 of argv) sound name (item 3 of argv)
+end run
+APPLESCRIPT
 echo "Notification sent: [$TITLE] $MSG (sound: $SOUND)"

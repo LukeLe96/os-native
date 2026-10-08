@@ -45,10 +45,15 @@ os-native/
 ├── bin/
 │   ├── os-native            # Universal Cross-Platform Dispatcher CLI
 │   └── os-native-init       # Environment Profiler, Tool Auditor & Privacy Guardrail
-├── macos/                   # macOS & Apple Silicon Native Suite (29 Tools)
+├── macos/                   # macOS & Apple Silicon Native Suite (30 Tools)
 │   ├── bin/                 # Compiled ARM64 Native Binaries (Swiftc -O & Shell)
 │   ├── src/                 # Swift source code implementations
+│   ├── build.sh             # Native ARM64 Swift compiler automation script
 │   └── SKILL.md             # Detailed Mac mini operational specs
+├── tests/                   # Automated smoke & benchmark test harness
+│   └── test_macos.py        # Python 3 test runner (51 unit & integration tests)
+├── docs/                    # Architectural specs and developer guides
+│   └── ARCHITECTURE.md      # Zero-Token architectural doctrine & silicon mapping
 ├── windows/                 # Windows Native Suite (10 Reference Tools)
 │   ├── win-ocr.ps1          # WinRT Windows.Media.Ocr (Offline OCR)
 │   ├── win-tts.ps1          # System.Speech.Synthesis SAPI TTS

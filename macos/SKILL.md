@@ -1,7 +1,7 @@
 ---
 name: mac-mini-native
 description: "Use when running native Mac mini tasks (OCR, bg removal, QR, docx, PDF, poses, TTS, video trim, clipboard, notify, keychain, telemetry, Spotlight)."
-version: 2.7.0
+version: 2.7.1
 author: Tahi
 license: MIT
 platforms: [macos]
@@ -17,7 +17,7 @@ prerequisites:
 
 Dedicated toolkit designed specifically for Apple Silicon M-series hardware and the Apple Neural Engine (ANE). Runs 100% offline, guarantees complete data privacy, executes with sub-second latency, consumes zero API tokens, and requires no bulky third-party libraries.
 
-All 29 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`~/.hermes/bin/` and `~/.local/bin/`).
+All 30 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`~/.hermes/bin/` and `~/.local/bin/`).
 
 ---
 

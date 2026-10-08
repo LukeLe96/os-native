@@ -164,6 +164,28 @@ def handle_audio_convert(args):
         return run_cmd([script_path, in_file, out_file])
     return 1
 
+def handle_sound_classify(args):
+    if not args:
+        print("Usage: os-native sound-classify <audio_path> [options]")
+        return 1
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-sound-classify")
+        return run_cmd([bin_path] + args)
+    else:
+        print(f"sound-classify is currently implemented natively on macOS (Apple SoundAnalysis). {SYSTEM} support coming soon.", file=sys.stderr)
+        return 1
+
+def handle_embed(args):
+    if not args:
+        print("Usage: os-native embed <text> [options]")
+        return 1
+    if SYSTEM == "Darwin":
+        bin_path = os.path.join(PROJECT_ROOT, "macos", "bin", "apple-embed")
+        return run_cmd([bin_path] + args)
+    else:
+        print(f"embed is currently implemented natively on macOS (NaturalLanguage). {SYSTEM} support coming soon.", file=sys.stderr)
+        return 1
+
 def handle_tts(args):
     if not args:
         print("Usage: os-native tts <text> [output_file]")
@@ -195,6 +217,8 @@ def main():
         print("  clipboard --copy <text> / --paste Sync clipboard across device")
         print("  telemetry                         Display host resource status (RAM, CPU, Uptime)")
         print("  audio-convert <in> <out>          Sub-millisecond audio format conversion")
+        print("  sound-classify <audio> [opts]     Offline audio event classification (300+ classes)")
+        print("  embed <text> [opts]               Fast sentence vector embeddings via NaturalLanguage")
         print("  tts <text> [output]               Offline text-to-speech synthesis")
         print("  macos <tool> ...                  Directly call macOS native tool (Darwin only)")
         return 0
@@ -212,6 +236,8 @@ def main():
         "telemetry": handle_telemetry,
         "clipboard": handle_clipboard,
         "audio-convert": handle_audio_convert,
+        "sound-classify": handle_sound_classify,
+        "embed": handle_embed,
         "tts": handle_tts
     }
 

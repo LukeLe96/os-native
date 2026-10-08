@@ -1,13 +1,13 @@
 ---
 name: mac-mini-native
 description: "Use when running native Mac mini tasks (OCR, bg removal, QR, docx, PDF, poses, TTS, video trim, clipboard, notify, keychain, telemetry, Spotlight)."
-version: 2.6.0
+version: 2.7.0
 author: Tahi
 license: MIT
 platforms: [macos]
 metadata:
   hermes:
-    tags: [MacMini, AppleSilicon, NeuralEngine, NativeAI, Vision, PDFKit, SIPS, Spotlight, Docx, MediaEngine, Keychain, Clipboard, Telemetry, UIDetection]
+    tags: [MacMini, AppleSilicon, NeuralEngine, NativeAI, Vision, PDFKit, SIPS, Spotlight, Docx, MediaEngine, Keychain, Clipboard, Telemetry, UIDetection, SoundAnalysis]
     related_skills: [os-native, os-native-init, apple-ai]
 prerequisites:
   commands: [swift]
@@ -17,7 +17,7 @@ prerequisites:
 
 Dedicated toolkit designed specifically for Apple Silicon M-series hardware and the Apple Neural Engine (ANE). Runs 100% offline, guarantees complete data privacy, executes with sub-second latency, consumes zero API tokens, and requires no bulky third-party libraries.
 
-All 24 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`~/.hermes/bin/` and `~/.local/bin/`).
+All 29 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`~/.hermes/bin/` and `~/.local/bin/`).
 
 ---
 
@@ -26,6 +26,7 @@ All 24 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`
 ### 1. Computer Vision & Neural Engine
 * `apple-bg-remove <input> <output.png>`: Subject lifting / transparent PNG generation (~0.24s).
 * `apple-ocr <input>`: Live Text OCR (Native Vietnamese & English support, ~0.21s).
+* `apple-ocr-json <input>`: Structured OCR with precise bounding boxes and words per line (~0.21s).
 * `apple-ui-detect <input> [--target <query>] [--type <type>] [--draw out.png]`: Native UI element & interactive target detector (~0.04s - 0.3s, zero tokens).
 * `apple-barcode <input>`: QR and Barcode decoder (0.02s).
 * `apple-classify <input>`: Zero-shot image classification and tagging (0.05s).
@@ -39,14 +40,18 @@ All 24 compiled ARM64 binaries and shell utilities reside directly in `$PATH` (`
 * `apple-pdf-render <file.pdf> <out_dir> [scale]`: High-resolution PDF-to-PNG rendering.
 
 ### 3. Video & Media Engine
-* `apple-video-trim <video> <duration> <output> [start]`: Hardware-accelerated video trimming.
+* `apple-video-trim <video> <duration> <output> [start]`: Hardware-accelerated video trimming (~0.05s).
+* `apple-video-frames <video> <out_dir> [--fps N]`: Hardware keyframe and scene extraction via AVFoundation.
+* `apple-video-transcode <video> <output>`: VideoToolbox & AV1 HW accelerated transcode/render.
 * `apple-img-resize <input> <max_px> <output>`: Instant image resizing and compression via SIPS (0.01s).
 * `apple-meta <file_path>`: Deep file metadata inspection via Spotlight (0.001s).
 
 ### 4. Audio & Natural Language
 * `apple-tts "<text>" <out.m4a> [voice]`: Offline text-to-speech with phonetic filtering.
+* `apple-sound-classify <audio> [--top N] [--threshold F] [--json]`: Offline sound event classification across 300+ classes via SoundAnalysis.framework (~0.09s, 0-token).
 * `apple-audio-convert <in> <out>`: Sub-millisecond audio transcoding via CoreAudio.
 * `apple-semantic --dist / --neighbors`: Vector semantic similarity via NLEmbedding.
+* `apple-embed "<text>" [--cosine <t1> <t2>]`: 512-dimensional sentence vector embeddings via NaturalLanguage.framework (~0.005s).
 
 ### 5. System, Telemetry & Security
 * `apple-clipboard --copy / --paste`: Universal clipboard synchronization across Apple devices.

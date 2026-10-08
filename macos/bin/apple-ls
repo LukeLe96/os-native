@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# apple-ls: Modern rich file lister on macOS replacing ls -la
+DIR="${1:-.}"
+python3 -c '
+import os, sys, time
+
+target_dir = sys.argv[1] if len(sys.argv) > 1 else "."
+if not os.path.exists(target_dir):
+    print("Directory not found:", target_dir)
+    sys.exit(1)
+
+items = sorted(os.listdir(target_dir))
+print(f"=== DIRECTORY: {os.path.abspath(target_dir)} ({len(items)} items) ===")
+print(f"%-6s | %9s | %-16s | %s" % ("TYPE", "SIZE", "MODIFIED", "NAME"))
+print("-" * 75)
+
+for item in items:
+    path = os.path.join(target_dir, item)
+    try:
+        st = os.stat(path)
+        is_dir = os.path.isdir(path)
+        
+        # Size
+        size = st.st_size
+        if is_dir:
+            size_str = "<DIR>"
+            type_str = "DIR"
+        elif size < 1024:
+            size_str = f"{size} B"
+            type_str = "FILE"
+        elif size < 1024 * 1024:
+            size_str = f"{size/1024:.1f} KB"
+            type_str = "FILE"
+        else:
+            size_str = f"{size/(1024*1024):.1f} MB"
+            type_str = "FILE"
+            
+        mtime = time.strftime("%Y-%m-%d %H:%M", time.localtime(st.st_mtime))
+        
+        ext = os.path.splitext(item)[1].lower()
+        if is_dir:
+            type_str = "DIR"
+        elif ext in [".png", ".jpg", ".jpeg", ".webp"]:
+            type_str = "IMG"
+        elif ext in [".mp4", ".mov", ".m4v"]:
+            type_str = "VIDEO"
+        elif ext in [".mp3", ".wav", ".m4a", ".aac"]:
+            type_str = "AUDIO"
+        elif ext in [".pdf", ".docx", ".doc"]:
+            type_str = "DOC"
+        elif ext in [".py", ".sh", ".swift", ".js", ".ts"]:
+            type_str = "CODE"
+            
+        print(f"%-6s | %9s | %-16s | %s" % (type_str, size_str, mtime, item))
+    except Exception:
+        continue
+' "$DIR"

@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""
+apple-video-transcode: Bộ chuyển mã & render video tăng tốc phần cứng Apple Silicon (M4 Media Engine)
+Hỗ trợ:
+- Tự động phát hiện codec nguồn (bao gồm AV1 Hardware Decode trên Apple M4)
+- Ép cờ VideoToolbox hardware encoder (h264_videotoolbox / hevc_videotoolbox / prores_videotoolbox)
+- Tự động tính toán bitrate thông minh theo độ phân giải (1080p, 4K, 720p)
+- Đóng gói container MP4 +faststart tối ưu phát tức thì trên Telegram / Web
+"""
+
+import sys
+import os
+import argparse
+import subprocess
+import json
+import shutil
+from pathlib import Path
+
+def probe_video(path: str):
+    cmd = [
+        "ffprobe", "-v", "quiet",
+        "-print_format", "json",
+        "-show_streams", "-show_format",
+        path
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        return None
+    try:
+        return json.loads(res.stdout)
+    except Exception:
+        return None
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="apple-video-transcode: Apple Silicon M4 Hardware Video Transcoder"
+    )
+    parser.add_argument("input", help="Đường dẫn file video đầu vào")
+    parser.add_argument("output", help="Đường dẫn file video đầu ra (.mp4/.mov)")
+    parser.add_argument("--codec", choices=["h264", "hevc", "prores", "copy"], default="h264",
+                        help="Bộ mã hóa phần cứng (mặc định: h264)")
+    parser.add_argument("--preset", choices=["ultra", "high", "medium", "telegram"], default="high",
+                        help="Preset chất lượng / kích thước (mặc định: high)")
+    parser.add_argument("--fps", type=int, default=None, help="Ép số khung hình/giây (fps)")
+    parser.add_argument("--scale", type=str, default=None, help="Scale độ phân giải (ví dụ: 1920:1080, 1080:1920, 1280:720)")
+    parser.add_argument("--crf-equiv", type=int, default=None, help="Mức chất lượng VideoToolbox tương đương CRF (1-100)")
+    parser.add_argument("--audio-bitrate", default="192k", help="Bitrate audio AAC (mặc định: 192k)")
+    parser.add_argument("--quiet", action="store_true", help="Ẩn log tiến trình FFmpeg")
+
+    args = parser.parse_args()
+
+    input_path = Path(args.input).expanduser().resolve()
+    output_path = Path(args.output).expanduser().resolve()
+
+    if not input_path.exists():
+        print(f"❌ Lỗi: Không tìm thấy file đầu vào: {input_path}", file=sys.stderr)
+        sys.exit(1)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 1. Probe input video
+    info = probe_video(str(input_path))
+    vstream = None
+    astream = None
+    if info:
+        for s in info.get("streams", []):
+            if s.get("codec_type") == "video" and not vstream:
+                vstream = s
+            elif s.get("codec_type") == "audio" and not astream:
+                astream = s
+
+    in_codec = vstream.get("codec_name", "").lower() if vstream else ""
+    in_w = int(vstream.get("width", 1920)) if vstream else 1920
+    in_h = int(vstream.get("height", 1080)) if vstream else 1080
+
+    print(f"🎬 [apple-video-transcode] Nguồn: {input_path.name} ({in_w}x{in_h}, codec: {in_codec or 'unknown'})")
+
+    # 2. Xây dựng lệnh FFmpeg
+    cmd = ["ffmpeg", "-y"]
+
+    # Phần cứng Hardware Decode:
+    # Nếu là AV1, HEVC, H264, ProRes -> Kích hoạt VideoToolbox Hardware Decode
+    hw_decode_codecs = ["av1", "hevc", "h264", "prores"]
+    if in_codec in hw_decode_codecs:
+        cmd.extend(["-hwaccel", "videotoolbox"])
+        if in_codec == "av1":
+            print("⚡ [M4 Media Engine]: Đã kích hoạt phần cứng giải mã AV1 Hardware Decoder!")
+            cmd.extend(["-c:v", "av1"])
+
+    cmd.extend(["-i", str(input_path)])
+
+    # Video Filter nếu có scale hoặc fps
+    filters = []
+    if args.scale:
+        filters.append(f"scale={args.scale}:force_original_aspect_ratio=decrease,pad={args.scale}:(ow-iw)/2:(oh-ih)/2")
+    if args.fps:
+        filters.append(f"fps={args.fps}")
+    if filters:
+        cmd.extend(["-vf", ",".join(filters)])
+
+    # Video Encoder & Bitrate
+    if args.codec == "copy":
+        cmd.extend(["-c:v", "copy"])
+    elif args.codec == "h264":
+        cmd.extend(["-c:v", "h264_videotoolbox", "-pix_fmt", "yuv420p"])
+        # Bitrate theo preset & resolution
+        is_4k = max(in_w, in_h) >= 3000
+        if args.preset == "ultra":
+            br = "20000k" if is_4k else "10000k"
+        elif args.preset == "high":
+            br = "12000k" if is_4k else "6000k"
+        elif args.preset == "telegram":
+            br = "2500k"  # Siêu nhẹ gửi Telegram mượt
+        else: # medium
+            br = "8000k" if is_4k else "4000k"
+        cmd.extend(["-b:v", br, "-profile:v", "high"])
+    elif args.codec == "hevc":
+        cmd.extend(["-c:v", "hevc_videotoolbox", "-pix_fmt", "yuv420p"])
+        is_4k = max(in_w, in_h) >= 3000
+        if args.preset == "ultra":
+            br = "14000k" if is_4k else "7000k"
+        elif args.preset == "high":
+            br = "8000k" if is_4k else "4000k"
+        elif args.preset == "telegram":
+            br = "1800k"
+        else:
+            br = "5000k" if is_4k else "2800k"
+        cmd.extend(["-b:v", br])
+    elif args.codec == "prores":
+        cmd.extend(["-c:v", "prores_videotoolbox", "-profile:v", "3"])
+
+    # Audio handling
+    if astream:
+        in_acodec = astream.get("codec_name", "").lower()
+        if in_acodec == "aac" and args.codec != "telegram":
+            cmd.extend(["-c:a", "copy"])
+        else:
+            cmd.extend(["-c:a", "aac", "-b:a", args.audio_bitrate])
+    else:
+        cmd.extend(["-an"])
+
+    # Web & Telegram faststart
+    cmd.extend(["-movflags", "+faststart", str(output_path)])
+
+    print(f"🚀 Bắt đầu chuyển mã VideoToolbox Hardware ({args.codec.upper()})...")
+    if args.quiet:
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    else:
+        res = subprocess.run(cmd, stderr=subprocess.PIPE, text=True)
+
+    if res.returncode != 0:
+        print(f"❌ Lỗi khi render: {res.stderr[-400:]}", file=sys.stderr)
+        sys.exit(res.returncode)
+
+    out_size_mb = output_path.stat().st_size / (1024 * 1024)
+    print(f"✅ Hoàn tất render phần cứng: {output_path.name} ({out_size_mb:.2f} MB)")
+    print(f"MEDIA:{output_path}")
+
+if __name__ == "__main__":
+    main()

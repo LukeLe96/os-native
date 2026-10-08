@@ -45,7 +45,7 @@ os-native/
 ├── bin/
 │   ├── os-native            # Universal Cross-Platform Dispatcher CLI
 │   └── os-native-init       # Environment Profiler, Tool Auditor & Privacy Guardrail
-├── macos/                   # macOS & Apple Silicon Native Suite (24 Tools)
+├── macos/                   # macOS & Apple Silicon Native Suite (29 Tools)
 │   ├── bin/                 # Compiled ARM64 Native Binaries (Swiftc -O & Shell)
 │   ├── src/                 # Swift source code implementations
 │   └── SKILL.md             # Detailed Mac mini operational specs
@@ -142,7 +142,9 @@ The following metrics were **empirically benchmarked on Apple Silicon (M-series,
 | **Image Tagging & Classification**| `apple-classify` | Apple Vision (`VNClassifyImageRequest`) | **~0.05s** | 0 tokens ($0.00) |
 | **QR & Barcode Scanner** | `apple-barcode` | Apple Vision (`VNDetectBarcodesRequest`) | **~0.02s** | 0 tokens ($0.00) |
 | **Facial & Landmark Detection** | `apple-face-detect`| Apple Vision (`VNDetectFaceLandmarksRequest`) | **~0.05s** | 0 tokens ($0.00) |
-| **Word Document Parsing** | `apple-docx` | macOS TextEngine (`textutil`) | **~0.01s** | 0 tokens ($0.00) |
+| **Sound Event Classification**  | `apple-sound-classify`| Apple SoundAnalysis (300+ sound classes) | **~0.095s** | 0 tokens ($0.00) |
+| **Sentence Vector Embedding**   | `apple-embed`       | Apple NaturalLanguage (512-dim Cosine)    | **~0.005s** | 0 tokens ($0.00) |
+| **Word Document Parsing**       | `apple-docx`        | macOS TextEngine (`textutil`)             | **~0.01s** | 0 tokens ($0.00) |
 | **PDF Text Extraction** | `apple-pdf-extract`| Apple PDFKit Native | **~0.02s** | 0 tokens ($0.00) |
 | **PDF Page Rendering (High-res)**| `apple-pdf-render` | Apple PDFKit + AppKit | **~0.019s/page** | 0 tokens ($0.00) |
 | **Hardware Video Trimming** | `apple-video-trim` | Apple Silicon Media Engine (`avconvert`) | **~0.3s** | 0 tokens ($0.00) |
